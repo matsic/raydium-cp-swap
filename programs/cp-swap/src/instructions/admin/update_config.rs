@@ -31,6 +31,10 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -
         }
         Some(5) => amm_config.create_pool_fee = value,
         Some(6) => amm_config.disable_create_pool = if value == 0 { false } else { true },
+        Some(7) => {
+            let new_discount_authority = *ctx.remaining_accounts.iter().next().unwrap().key;
+            update_discount_authority(amm_config, new_discount_authority)?;
+        }
         _ => return err!(ErrorCode::InvalidInput),
     }
 
@@ -75,5 +79,17 @@ fn set_new_fund_owner(amm_config: &mut Account<AmmConfig>, new_fund_owner: Pubke
         new_fund_owner.key().to_string()
     );
     amm_config.fund_owner = new_fund_owner;
+    Ok(())
+}
+
+fn update_discount_authority(amm_config: &mut Account<AmmConfig>, new_discount_authority: Pubkey) -> Result<()> {
+    require_keys_neq!(new_discount_authority, Pubkey::default());
+    #[cfg(feature = "enable-log")]
+    msg!(
+        "amm_config, old_discount_authority:{}, discount_authority:{}",
+        amm_config.discount_authority.to_string(),
+        new_discount_authority.key().to_string()
+    );
+    amm_config.discount_authority = new_discount_authority;
     Ok(())
 }

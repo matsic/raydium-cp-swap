@@ -79,11 +79,18 @@ pub fn swap_base_output(
         .checked_mul(u128::from(total_output_token_amount))
         .unwrap();
 
+    // let discount_fee_trade = match &ctx.accounts.discount_config {
+    //     Some(conf) => conf.discount as u128,
+    //     _ => 0u128
+    // };
+    let discount_fee_trade = DiscountConfig::get_discount(&ctx.accounts.discount_config)?;
+    let trade_fee_rate = ((ctx.accounts.amm_config.trade_fee_rate as u128) * (100 - discount_fee_trade) / 100u128) as u64;
+    
     let result = CurveCalculator::swap_base_output(
         u128::from(actual_amount_out),
         u128::from(total_input_token_amount),
         u128::from(total_output_token_amount),
-        ctx.accounts.amm_config.trade_fee_rate,
+        trade_fee_rate, // ctx.accounts.amm_config.trade_fee_rate,
         ctx.accounts.amm_config.protocol_fee_rate,
         ctx.accounts.amm_config.fund_fee_rate,
     )
@@ -100,9 +107,10 @@ pub fn swap_base_output(
 
     #[cfg(feature = "enable-log")]
     msg!(
-        "source_amount_swapped:{}, destination_amount_swapped:{}, trade_fee:{}, constant_before:{},constant_after:{}",
+        "source_amount_swapped:{}, destination_amount_swapped:{}, discount_fee_trade: {}, trade_fee:{}, constant_before:{},constant_after:{}",
         result.source_amount_swapped,
         result.destination_amount_swapped,
+        discount_fee_trade,
         result.trade_fee,
         constant_before,
         constant_after

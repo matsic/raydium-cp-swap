@@ -26,10 +26,11 @@ declare_id!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
 
 pub mod admin {
     use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    declare_id!("adMCyoCgfkg7bQiJ9aBJ59H3BXLY3r5LNLfPpQfMzBe");
-    #[cfg(not(feature = "devnet"))]
-    declare_id!("GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ");
+    // #[cfg(feature = "devnet")]
+    // declare_id!("adMCyoCgfkg7bQiJ9aBJ59H3BXLY3r5LNLfPpQfMzBe");
+    // #[cfg(not(feature = "devnet"))]
+    // declare_id!("GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ");
+    declare_id!("6xfw4PFr9Lpqnca3758evyr1KGT75gbCgQWV5WsJ7pbh");
 }
 
 pub mod create_pool_fee_reveiver {
@@ -92,6 +93,10 @@ pub mod raydium_cp_swap {
     ///
     pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -> Result<()> {
         instructions::update_amm_config(ctx, param, value)
+    }
+
+    pub fn update_discount_config(ctx: Context<UpdateDiscountConfig>, discount_value: u8) -> Result<()> {
+        instructions::update_discount_config(ctx, discount_value)
     }
 
     /// Update pool status for given vaule
@@ -228,4 +233,15 @@ pub mod raydium_cp_swap {
     pub fn swap_base_output(ctx: Context<Swap>, max_amount_in: u64, amount_out: u64) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
     }
+/*
+    /// Sets discount for address
+    /// # Arguments
+    /// 
+    /// * `address` - address to use discount
+    /// * `amount` - discount amount in percent, 0% is 0, 1% is 1, 10% is 10...
+    /// 
+    // pub fn setup_address_discount(_address: Pubkey, _amount: u8) -> Result<()> {
+    //     Ok(())
+    // }
+    */
 }

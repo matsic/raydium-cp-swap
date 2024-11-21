@@ -24,9 +24,29 @@ import {
   getPoolVaultAddress,
   createTokenMintAndAssociatedTokenAccount,
   getOrcleAccountAddress,
+  logTrangaction,
 } from "./index";
 
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
+
+export async function setupDiscountAuthority(
+  program: Program<RaydiumCpSwap>,
+  connection: Connection,
+  owner: Signer,
+  discountAuthority: PublicKey
+) {
+  
+}
+
+export async function setupDiscount(
+  program: Program<RaydiumCpSwap>,
+  connection: Connection,
+  authority: Signer,
+  address: PublicKey,
+  discount: number
+) {
+
+}
 
 export async function setupInitializeTest(
   program: Program<RaydiumCpSwap>,
@@ -213,6 +233,55 @@ export async function setupSwapTest(
     confirmOptions
   );
   return { configAddress, poolAddress, poolState };
+}
+
+export function getDepotitConfigAddress(program: Program<RaydiumCpSwap>, user: PublicKey) {
+  return PublicKey.findProgramAddressSync([Buffer.from("discount_config"), user.toBuffer()], program.programId)[0];
+}
+
+export async function updateDiscountConfig(
+  program: Program<RaydiumCpSwap>,
+  connection: Connection,
+  authority: Signer,
+  user: PublicKey,
+  discount_value: number,
+  confirmOptions?: ConfirmOptions
+) {
+  const discountConfig = getDepotitConfigAddress(program, user);
+  const ix = await program.methods
+    .updateDiscountConfig(discount_value)
+    .accounts({
+      authority: authority.publicKey,
+      user,
+      systemProgram: SystemProgram.programId,
+      discountConfig,
+    }).instruction();
+    const tx = await sendTransaction(connection, [ix], [authority], confirmOptions);
+    console.log(`updateDiscountConfig for user ${user.toBase58()}, value ${discount_value}, tx: `, tx);
+    await logTrangaction(connection, tx);
+    return tx;
+}
+
+export async function updateDiscountAuthority(
+  program: Program<RaydiumCpSwap>,
+  connection: Connection,
+  owner: Signer,
+  configAddress: PublicKey,
+  discountAuthority: PublicKey,
+  confirmOptions?: ConfirmOptions
+) {
+  const discouontAuthorityIndex = 7;
+  const ix = await program.methods
+    .updateAmmConfig(discouontAuthorityIndex, new BN(0))
+    .accounts({
+      owner: owner.publicKey,
+      ammConfig: configAddress,
+    })
+    .remainingAccounts([{pubkey: discountAuthority, isSigner: false, isWritable: false}])
+    .instruction();
+    const tx = await sendTransaction(connection, [ix], [owner], confirmOptions);
+    console.log("updateDiscountAuthority tx: ", tx);
+    await logTrangaction(connection, tx);
 }
 
 export async function createAmmConfig(
@@ -515,6 +584,7 @@ export async function swap_base_input(
   minimum_amount_out: BN,
   confirmOptions?: ConfirmOptions
 ) {
+  const discountConfig = getDepotitConfigAddress(program, owner.publicKey);
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
     configAddress,
@@ -567,6 +637,7 @@ export async function swap_base_input(
       inputTokenMint: inputToken,
       outputTokenMint: outputToken,
       observationState: observationAddress,
+      discountConfig,
     })
     .rpc(confirmOptions);
 
@@ -585,6 +656,7 @@ export async function swap_base_output(
   max_amount_in: BN,
   confirmOptions?: ConfirmOptions
 ) {
+  const discountConfig = getDepotitConfigAddress(program, owner.publicKey);
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
     configAddress,
@@ -637,6 +709,7 @@ export async function swap_base_output(
       inputTokenMint: inputToken,
       outputTokenMint: outputToken,
       observationState: observationAddress,
+      discountConfig,
     })
     .rpc(confirmOptions);
 

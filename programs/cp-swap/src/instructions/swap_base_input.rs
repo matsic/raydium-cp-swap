@@ -10,6 +10,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 #[derive(Accounts)]
 pub struct Swap<'info> {
     /// The user performing the swap
+    #[account(mut)]
     pub payer: Signer<'info>,
 
     /// CHECK: pool vault and lp mint authority
@@ -71,6 +72,16 @@ pub struct Swap<'info> {
     /// The program account for the most recent oracle observation
     #[account(mut, address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
+    #[account(
+        seeds = [
+            DISCOUNT_CONFIG_SEED.as_bytes(),
+            payer.key().as_ref(),
+        ],
+        bump,
+    )]
+    // pub discount_config: Option<Account<'info, DiscountConfig>>,
+    /// CHECK: It's OK to use unchecked as we check it later
+    pub discount_config: UncheckedAccount<'info>,
 }
 
 pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
@@ -139,15 +150,23 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
     } else {
         return err!(ErrorCode::InvalidVault);
     };
+
     let constant_before = u128::from(total_input_token_amount)
         .checked_mul(u128::from(total_output_token_amount))
         .unwrap();
+
+    // let discount_fee_trade = match &ctx.accounts.discount_config {
+    //     Some(conf) => conf.discount as u128,
+    //     _ => 0u128
+    // };
+    let discount_fee_trade = DiscountConfig::get_discount(&ctx.accounts.discount_config)?;
+    let trade_fee_rate = ((ctx.accounts.amm_config.trade_fee_rate as u128) * (100 - discount_fee_trade) / 100u128) as u64;
 
     let result = CurveCalculator::swap_base_input(
         u128::from(actual_amount_in),
         u128::from(total_input_token_amount),
         u128::from(total_output_token_amount),
-        ctx.accounts.amm_config.trade_fee_rate,
+        trade_fee_rate, //ctx.accounts.amm_config.trade_fee_rate,
         ctx.accounts.amm_config.protocol_fee_rate,
         ctx.accounts.amm_config.fund_fee_rate,
     )
@@ -163,10 +182,11 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
     .unwrap();
     #[cfg(feature = "enable-log")]
     msg!(
-        "source_amount_swapped:{}, destination_amount_swapped:{}, trade_fee:{}, constant_before:{},constant_after:{}",
+        "source_amount_swapped:{}, destination_amount_swapped:{}, discount_fee_trade: {}, trade_fee:{}, constant_before:{},constant_after:{}",
         result.source_amount_swapped,
         result.destination_amount_swapped,
-        trade_fee,
+        discount_fee_trade,
+        result.trade_fee,
         constant_before,
         constant_after
     );

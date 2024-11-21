@@ -25,6 +25,43 @@ import {
 } from "@solana/spl-token";
 import { sendTransaction } from "./index";
 
+export async function createAccountWithSol(
+  connection: Connection,
+  payer: Signer,
+) {
+  const wallet = new Keypair();
+  let ixs: TransactionInstruction[] = [];
+  ixs.push(
+    web3.SystemProgram.transfer({
+      fromPubkey: payer.publicKey,
+      toPubkey: wallet.publicKey,
+      lamports: web3.LAMPORTS_PER_SOL/10,
+    })
+  );
+  await sendTransaction(connection, ixs, [payer]);
+  return wallet;
+}
+
+export async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+export async function logTrangaction(connection: Connection, hash: string) {
+  // const transactionDetails = await connection.getTransaction(hash, );
+  const transactionDetails = await connection.getTransaction(hash, {maxSupportedTransactionVersion: 0, commitment: 'confirmed'});
+  if (!transactionDetails) {
+    console.log("Transaction not found or not confirmed yet.");
+    return;
+  }
+  const logs = transactionDetails.meta?.logMessages;
+  if (logs) {
+    console.log("Transaction Logs:");
+    logs.filter(s => s.startsWith("Program log:")).forEach((log) => console.log(log));
+  } else {
+    console.log("No logs available for this transaction.");
+  }
+}
+
 // create a token mint and a token2022 mint with transferFeeConfig
 export async function createTokenMintAndAssociatedTokenAccount(
   connection: Connection,
@@ -37,7 +74,7 @@ export async function createTokenMintAndAssociatedTokenAccount(
     web3.SystemProgram.transfer({
       fromPubkey: payer.publicKey,
       toPubkey: mintAuthority.publicKey,
-      lamports: web3.LAMPORTS_PER_SOL,
+      lamports: web3.LAMPORTS_PER_SOL/10,
     })
   );
   await sendTransaction(connection, ixs, [payer]);

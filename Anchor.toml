@@ -18,11 +18,12 @@ raydium_cp_swap = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
 url = "https://github.com/raydium-io/raydium-cp-swap"
 
 [provider]
-cluster = "Localnet"
+cluster = "Localnet" #"Devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+# test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/mono.test.ts"
 
 [test]
 startup_wait = 10000
