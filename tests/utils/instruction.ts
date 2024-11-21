@@ -235,7 +235,7 @@ export async function setupSwapTest(
   return { configAddress, poolAddress, poolState };
 }
 
-export function getDepotitConfigAddress(program: Program<RaydiumCpSwap>, user: PublicKey) {
+export function getDiscountConfigAddress(program: Program<RaydiumCpSwap>, user: PublicKey) {
   return PublicKey.findProgramAddressSync([Buffer.from("discount_config"), user.toBuffer()], program.programId)[0];
 }
 
@@ -247,7 +247,7 @@ export async function updateDiscountConfig(
   discount_value: number,
   confirmOptions?: ConfirmOptions
 ) {
-  const discountConfig = getDepotitConfigAddress(program, user);
+  const discountConfig = getDiscountConfigAddress(program, user);
   const ix = await program.methods
     .updateDiscountConfig(discount_value)
     .accounts({
@@ -584,7 +584,7 @@ export async function swap_base_input(
   minimum_amount_out: BN,
   confirmOptions?: ConfirmOptions
 ) {
-  const discountConfig = getDepotitConfigAddress(program, owner.publicKey);
+  const discountConfig = getDiscountConfigAddress(program, owner.publicKey);
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
     configAddress,
@@ -656,7 +656,7 @@ export async function swap_base_output(
   max_amount_in: BN,
   confirmOptions?: ConfirmOptions
 ) {
-  const discountConfig = getDepotitConfigAddress(program, owner.publicKey);
+  const discountConfig = getDiscountConfigAddress(program, owner.publicKey);
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
     configAddress,
