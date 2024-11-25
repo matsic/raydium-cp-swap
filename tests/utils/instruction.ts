@@ -1,4 +1,4 @@
-import { Program, BN } from "@coral-xyz/anchor";
+import { Program, BN, getProvider } from "@coral-xyz/anchor";
 import { RaydiumCpSwap } from "../../target/types/raydium_cp_swap";
 import {
   Connection,
@@ -8,6 +8,7 @@ import {
   Signer,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
+  sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -25,28 +26,29 @@ import {
   createTokenMintAndAssociatedTokenAccount,
   getOrcleAccountAddress,
   logTrangaction,
+  sleep,
 } from "./index";
 
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
-export async function setupDiscountAuthority(
-  program: Program<RaydiumCpSwap>,
-  connection: Connection,
-  owner: Signer,
-  discountAuthority: PublicKey
-) {
+// export async function setupDiscountAuthority(
+//   program: Program<RaydiumCpSwap>,
+//   connection: Connection,
+//   owner: Signer,
+//   discountAuthority: PublicKey
+// ) {
   
-}
+// }
 
-export async function setupDiscount(
-  program: Program<RaydiumCpSwap>,
-  connection: Connection,
-  authority: Signer,
-  address: PublicKey,
-  discount: number
-) {
+// export async function setupDiscount(
+//   program: Program<RaydiumCpSwap>,
+//   connection: Connection,
+//   authority: Signer,
+//   address: PublicKey,
+//   discount: number
+// ) {
 
-}
+// }
 
 export async function setupInitializeTest(
   program: Program<RaydiumCpSwap>,
@@ -257,7 +259,7 @@ export async function updateDiscountConfig(
       discountConfig,
     }).instruction();
     const tx = await sendTransaction(connection, [ix], [authority], confirmOptions);
-    console.log(`updateDiscountConfig for user ${user.toBase58()}, value ${discount_value}, tx: `, tx);
+    console.log(tx, `updateDiscountConfig for user ${user.toBase58()}, value ${discount_value}, tx: `, tx);
     await logTrangaction(connection, tx);
     return tx;
 }
@@ -324,6 +326,7 @@ export async function createAmmConfig(
 }
 
 export async function initialize(
+  connection: Connection,
   program: Program<RaydiumCpSwap>,
   creator: Signer,
   configAddress: PublicKey,
@@ -336,7 +339,7 @@ export async function initialize(
     initAmount0: new BN(10000000000),
     initAmount1: new BN(20000000000),
   },
-  createPoolFee = new PublicKey("DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8")
+  createPoolFee = new PublicKey("DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8"),
 ) {
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
@@ -385,7 +388,7 @@ export async function initialize(
     false,
     token1Program
   );
-  await program.methods
+  const ix = await program.methods
     .initialize(initAmount.initAmount0, initAmount.initAmount1, new BN(0))
     .accounts({
       creator: creator.publicKey,
@@ -407,10 +410,15 @@ export async function initialize(
       token1Program: token1Program,
       systemProgram: SystemProgram.programId,
       rent: SYSVAR_RENT_PUBKEY,
-    })
-    .rpc(confirmOptions);
-  const poolState = await program.account.poolState.fetch(poolAddress);
-  return { poolAddress, poolState };
+    }).instruction();
+    const hash = await sendTransaction(connection, [ix], [creator], confirmOptions);
+    console.log(`tx: ${hash}`);
+    await logTrangaction(connection, hash);
+    // .rpc(confirmOptions);
+    // await sleep(5000);
+  // const poolState = await program.account.poolState.fetch(poolAddress);
+  // return { poolAddress, poolState };
+    return poolAddress;
 }
 
 export async function deposit(
@@ -424,7 +432,7 @@ export async function deposit(
   lp_token_amount: BN,
   maximum_token_0_amount: BN,
   maximum_token_1_amount: BN,
-  confirmOptions?: ConfirmOptions
+  confirmOptions?: ConfirmOptions,
 ) {
   const [auth] = await getAuthAddress(program.programId);
   const [poolAddress] = await getPoolAddress(
@@ -573,6 +581,7 @@ export async function withdraw(
 }
 
 export async function swap_base_input(
+  connection: Connection,
   program: Program<RaydiumCpSwap>,
   owner: Signer,
   configAddress: PublicKey,
@@ -621,7 +630,7 @@ export async function swap_base_input(
     program.programId
   );
 
-  const tx = await program.methods
+  const ix = await program.methods
     .swapBaseInput(amount_in, minimum_amount_out)
     .accounts({
       payer: owner.publicKey,
@@ -638,10 +647,11 @@ export async function swap_base_input(
       outputTokenMint: outputToken,
       observationState: observationAddress,
       discountConfig,
-    })
-    .rpc(confirmOptions);
-
-  return tx;
+    }).instruction();
+    const hash = await sendTransaction(connection, [ix], [owner], confirmOptions);
+    console.log(`tx: ${hash}`);
+    await logTrangaction(connection, hash);
+    return hash;
 }
 
 export async function swap_base_output(

@@ -74,7 +74,7 @@ export async function createTokenMintAndAssociatedTokenAccount(
     web3.SystemProgram.transfer({
       fromPubkey: payer.publicKey,
       toPubkey: mintAuthority.publicKey,
-      lamports: web3.LAMPORTS_PER_SOL/10,
+      lamports: web3.LAMPORTS_PER_SOL/5,
     })
   );
   await sendTransaction(connection, ixs, [payer]);
@@ -300,4 +300,29 @@ export function isEqual(amount1: bigint, amount2: bigint) {
     return true;
   }
   return false;
+}
+
+export async function logBalances(
+  connection: Connection,
+  owner: PublicKey,
+  token0Mint: PublicKey,
+  token0Program: PublicKey,
+  token1Mint: PublicKey,
+  token1Program: PublicKey,
+) {
+  const ata0 = getAssociatedTokenAddressSync(token0Mint, owner, undefined, token0Program);
+  const ata1 = getAssociatedTokenAddressSync(token1Mint, owner, undefined, token1Program);
+  const acc0 = await getAccount(
+    connection,
+    ata0,
+    "processed",
+    token0Program
+  );
+  const acc1 = await getAccount(
+    connection,
+    ata1,
+    "processed",
+    token1Program
+  );
+  console.log(`Amounts token0: ${acc0.amount}, token1: ${acc1.amount}`);
 }
