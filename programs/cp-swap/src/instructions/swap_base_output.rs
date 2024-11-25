@@ -107,7 +107,7 @@ pub fn swap_base_output(
 
     #[cfg(feature = "enable-log")]
     msg!(
-        "source_amount_swapped:{}, destination_amount_swapped:{}, discount_fee_trade: {}, trade_fee:{}, constant_before:{},constant_after:{}",
+        "source_amount_swapped:{}, destination_amount_swapped:{}, discount_fee_trade: {}%, trade_fee:{}, constant_before:{},constant_after:{}",
         result.source_amount_swapped,
         result.destination_amount_swapped,
         discount_fee_trade,

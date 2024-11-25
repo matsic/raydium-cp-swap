@@ -30,7 +30,7 @@ pub fn update_discount_config(ctx: Context<UpdateDiscountConfig>, discount_value
 
     #[cfg(feature = "enable-log")]
     msg!(
-        "update_discount_config {} bump {}, from:{}, to:{}",
+        "update_discount_config {} bump {}, from:{}%, to:{}%",
         config.key(), config.bump,
         config.discount,
         discount_value

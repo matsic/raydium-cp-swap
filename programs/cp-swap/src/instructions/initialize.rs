@@ -62,7 +62,7 @@ pub struct Initialize<'info> {
 
     /// pool lp mint
     #[account(
-        init,
+        init_if_needed,
         seeds = [
             POOL_LP_MINT_SEED.as_bytes(),
             pool_state.key().as_ref(),
@@ -93,7 +93,7 @@ pub struct Initialize<'info> {
 
     /// creator lp token account
     #[account(
-        init,
+        init_if_needed,
         associated_token::mint = lp_mint,
         associated_token::authority = creator,
         payer = creator,
@@ -134,7 +134,7 @@ pub struct Initialize<'info> {
 
     /// an account to store oracle observations
     #[account(
-        init,
+        init_if_needed,
         seeds = [
             OBSERVATION_SEED.as_bytes(),
             pool_state.key().as_ref(),
